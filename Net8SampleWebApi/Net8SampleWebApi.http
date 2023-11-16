@@ -1,0 +1,16 @@
+@Net8SampleWebApi_HostAddress = http://localhost:5192
+
+GET {{Net8SampleWebApi_HostAddress}}/
+Accept: text/plain
+
+###
+
+GET {{Net8SampleWebApi_HostAddress}}/config/debug
+Accept: text/plain
+
+###
+
+GET {{Net8SampleWebApi_HostAddress}}/health/databases
+Accept: application/json
+
+###
