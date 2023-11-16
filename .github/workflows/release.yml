@@ -1,18 +1,21 @@
-name: Release
+name: prerelease
 
 on:
   release:
-    types: [released]
+    types: [prereleased]
 
 jobs:
-  build-and-push-image:
+  build-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
     - name: Prepare
       id: prep
       shell: pwsh
       run: |
-        $DOCKER_IMAGE="ghcr.io/attilavlacsil/net8sample-webapi"
+        $DOCKER_IMAGE="ghcr.io/${{ github.repository_owner }}/net8sample-webapi"
         $RELEASE_TAG="${{ github.event.release.tag_name }}"
         
         $match = [regex]::Match($RELEASE_TAG, "^v(?<Version>[0-9]+\.[0-9]+\.[0-9]+)$")
@@ -23,12 +26,7 @@ jobs:
           throw "Invalid release tag: $RELEASE_TAG"
         }
         
-        if ("${{ github.event.action }}" -eq "released") {
-          $TAGS="$DOCKER_IMAGE`:$VERSION,$DOCKER_IMAGE`:latest"
-        }
-        else {
-          $TAGS="$DOCKER_IMAGE`:$VERSION-rc,$DOCKER_IMAGE`:rc"
-        }
+        $TAGS="$DOCKER_IMAGE`:$VERSION-rc,$DOCKER_IMAGE`:rc"
         
         echo "version=$VERSION" >> $env:GITHUB_OUTPUT
         echo "tags=$TAGS" >> $env:GITHUB_OUTPUT
@@ -38,15 +36,13 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: ghcr.io
-        username: ${{ github.repository_owner }}
+        username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v4
       with:
         file: Net8SampleWebApi/Dockerfile
         push: true
-        build-args: |
-          BUILD_VERSION=${{ steps.prep.outputs.version }}
         tags: ${{ steps.prep.outputs.tags }}
         labels: |
           org.opencontainers.image.source=${{ github.event.repository.html_url }}
